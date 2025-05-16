@@ -1,0 +1,42 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "debug current file",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "prepare_csv_wavs",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/f5_tts/train/datasets/prepare_csv_wavs.py",
+            "console": "integratedTerminal",
+            "args": ["/home/pham/F5-TTS-Vietnamese/data/vivoice_p1_small", 
+                    "/home/pham/F5-TTS-Vietnamese/data/hehe"]
+        },
+        {
+            "name": "extend_embedding_pretrained",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/extend_embedding_pretrained.py",
+            "console": "integratedTerminal",
+        },
+        {
+            "name": "debug fine_tuning",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/f5_tts/train/finetune_cli.py",
+            "console": "integratedTerminal",
+            "args": ["--exp_name", "F5TTS_v1_Base", "--learning_rate", "1e-05", "--batch_size_per_gpu", "48", "--batch_size_type", "sample", "--max_samples", "64", "--grad_accumulation_steps", "4", "--max_grad_norm", "1", "--epochs", "320", "--num_warmup_updates", "100", "--save_per_updates", "500", "--keep_last_n_checkpoints", "-1", "--last_per_updates", "100", "--dataset_name", "vivoice_p1_100_sample", "--finetune", "--pretrain", "/home/pham/F5-TTS-Vietnamese/ckpts/vivoice_p1_100_sample/pretrained_model_1200000.pt", "--tokenizer", "char", "--log_samples", "--logger", "wandb"],
+            "env": {
+                "CUDA_VISIBLE_DEVICES": "4"
+            }
+        }
+    ]
+}
