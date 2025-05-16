@@ -1,3 +1,6 @@
+# If ffmpeg is not installed, use torchaudio to get audio duration
+ONLY_TORCHAUDIO = False
+
 import os
 import sys
 import signal
@@ -24,7 +27,10 @@ from f5_tts.model.utils import (
 )
 
 
-PRETRAINED_VOCAB_PATH = files("f5_tts").joinpath("../../data/your_training_dataset/vocab.txt")
+#  https://github.com/nguyenthienhy/F5-TTS-Vietnamese/blob/e74db9d5a5e521bb930490e7cd7912438bf7ae84/src/f5_tts/train/datasets/prepare_csv_wavs.py#L28
+# PRETRAINED_VOCAB_PATH = files("f5_tts").joinpath("../../data/your_training_dataset/vocab.txt")
+# https://github.com/SWivid/F5-TTS/blob/3e2a07da1d3fabcb6e8804cec25100238e78c04e/src/f5_tts/train/datasets/prepare_csv_wavs.py#L29
+PRETRAINED_VOCAB_PATH = files("f5_tts").joinpath("../../data/Emilia_ZH_EN_pinyin/vocab.txt")
 
 
 def is_csv_wavs_format(input_dataset_dir):
@@ -96,7 +102,8 @@ def prepare_csv_wavs_dir(input_dir, num_workers=None):
     input_dir = Path(input_dir)
     metadata_path = input_dir / "metadata.csv"
     audio_path_text_pairs = read_audio_text_pairs(metadata_path.as_posix())
-
+    print(f"audio_path_text_pairs: {audio_path_text_pairs}")
+    
     polyphone = True
     total_files = len(audio_path_text_pairs)
 
@@ -160,6 +167,10 @@ def get_audio_duration(audio_path, timeout=5):
     Get the duration of an audio file in seconds using ffmpeg's ffprobe.
     Falls back to torchaudio.load() if ffprobe fails.
     """
+    if ONLY_TORCHAUDIO:
+        audio, sample_rate = torchaudio.load(audio_path)
+        return audio.shape[1] / sample_rate
+
     try:
         cmd = [
             "ffprobe",
@@ -176,16 +187,18 @@ def get_audio_duration(audio_path, timeout=5):
         )
         duration_str = result.stdout.strip()
         if duration_str:
+            print(f"duration_str: {duration_str}")
             return float(duration_str)
         raise ValueError("Empty duration string from ffprobe.")
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, ValueError) as e:
         print(f"Warning: ffprobe failed for {audio_path} with error: {e}. Falling back to torchaudio.")
         try:
             audio, sample_rate = torchaudio.load(audio_path)
+            print(f"audio.shape: {audio.shape}")
             return audio.shape[1] / sample_rate
         except Exception as e:
             raise RuntimeError(f"Both ffprobe and torchaudio failed for {audio_path}: {e}")
-
+    
 
 def read_audio_text_pairs(csv_file_path):
     audio_text_pairs = []
@@ -214,6 +227,7 @@ def save_prepped_dataset(out_dir, result, duration_list, text_vocab_set, is_fine
     with ArrowWriter(path=raw_arrow_path.as_posix(), writer_batch_size=100) as writer:
         for line in tqdm(result, desc="Writing to raw.arrow ..."):
             writer.write(line)
+        writer.finalize() # FIXED empty raw.arrow file
 
     # Save durations to JSON
     dur_json_path = out_dir / "duration.json"
@@ -224,6 +238,7 @@ def save_prepped_dataset(out_dir, result, duration_list, text_vocab_set, is_fine
     voca_out_path = out_dir / "vocab.txt"
     if is_finetune:
         file_vocab_finetune = PRETRAINED_VOCAB_PATH.as_posix()
+        # Nếu đã extend vocab, thì không cần copy lại vocab, do đã thực hiện ở bước chuẩn bị dữ liệu
         # shutil.copy2(file_vocab_finetune, voca_out_path) # Không cần copy lại vocab, do đã thực hiện ở bước chuẩn bị dữ liệu
     else:
         with open(voca_out_path.as_posix(), "w") as f:
@@ -279,6 +294,10 @@ Examples:
             executor.shutdown(wait=False, cancel_futures=True)
         sys.exit(1)
 
+def non_cli():
+    inp_dir = "/home/pham/F5-TTS-Vietnamese/data/vivoice_p1_100_sample"
+    out_dir = "/home/pham/F5-TTS-Vietnamese/data/vivoice_p1_100_sample"
+    prepare_and_save_set(inp_dir, out_dir, is_finetune=False, num_workers=1)
 
 if __name__ == "__main__":
-    cli()
+    non_cli()
