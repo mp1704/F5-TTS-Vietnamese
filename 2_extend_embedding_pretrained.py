@@ -70,7 +70,7 @@ def expand_model_embeddings(ckpt_path: str, new_ckpt_path: str, num_new_tokens: 
     torch.save(ckpt, new_ckpt_path)
 
 
-if __name__ == "__main__":
+def main_0():
     # Thiết lập seed ngẫu nhiên
     set_random_seed(SEED)
 
@@ -93,4 +93,31 @@ if __name__ == "__main__":
     expand_model_embeddings(ckpt_path, new_ckpt_path, num_new_tokens=vocab_size_new)
 
     print(f"Checkpoint đã được mở rộng và lưu tại: {new_ckpt_path}")
-    
+
+def main_1():
+    # Thiết lập seed ngẫu nhiên
+    set_random_seed(SEED)
+
+    # Đường dẫn file vocab
+    TOKEN_PRETRAINED_PATH = "/home/pham/F5-TTS-Vietnamese/data/Emilia_ZH_EN_pinyin/vocab.txt"
+    TOKEN_NEW_PATH = "/home/pham/F5-TTS-Vietnamese/data/vivoice_p1/vocab.txt"
+
+    # Load vocab
+    tokens_pretrained = load_vocab(TOKEN_PRETRAINED_PATH)
+    tokens_new = load_vocab(TOKEN_NEW_PATH)
+
+    # Số lượng token mới cần thêm
+    vocab_size_new = len(tokens_new) - len(tokens_pretrained)
+
+    # Đường dẫn checkpoint
+    ckpt_path = str(cached_path("hf://SWivid/F5-TTS/F5TTS_Base/model_1200000.pt"))
+    new_ckpt_path = "ckpts/vivoice_p1/pretrained_model_1200000.pt"
+    os.makedirs(os.path.dirname(new_ckpt_path), exist_ok=True)
+    # Mở rộng embedding
+    expand_model_embeddings(ckpt_path, new_ckpt_path, num_new_tokens=vocab_size_new)
+
+    print(f"Checkpoint đã được mở rộng và lưu tại: {new_ckpt_path}")
+
+if __name__ == "__main__":
+    main_1()
+   
